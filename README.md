@@ -57,6 +57,8 @@ npm install gulp-nodemon --save
 * create `gulpfile.js` (gulp looks for it automatically):
 
 ```js
+// gulpfile.js
+
 var gulp = require('gulp'),
     nodemon = require('gulp-nodemon');
 
@@ -74,4 +76,87 @@ gulp.task('default', function(){
   })
 });
 ```
+
+## Implementing HTTP Get
+
+* there are different ways to create routes. One way is `app.get` as we did before, but if we are going to have multiple routes a better way is to use `express.Router`:
+
+```js
+// inside app.js
+
+// create an instance of the Router to define all of our routes
+var bookRouter = express();
+
+bookRouter.route('/Books')
+    .get(function(req, res){
+      var responseJson = {hello: "This is my api"};
+      res.json(responseJson);
+    });
+
+// setup a base for where our API route is going to be. This will be the root of all of our routes
+app.use('/api', bookRouter)
+```
+
+* **Note:** use JSONView plugin on Chrome to get a formatted json
+
+## Wiring up to MongoDB and Mongoose
+
+* Now that we have our API working we want to hook it up to a real database on the backend, so that we can return some real data.
+
+* install mongoDB and create the database bookAPI with some data
+
+* install mongoose:
+
+```none
+npm install mongoose --save
+```
+
+* what Mongoose does is essentially like what Entity Framework would be in the .NET world. It's going to take the data in Mongo and convert it into JSON objects that we can then use in our application.
+
+* we need to open a connection to the database using `mongoose.connect`
+
+* the way that Mongoose knows how to translate the data that it gets out of MongoDB it uses a thing called a model:
+
+```js
+// bookModel.js
+
+var mongoose = require('mongoose'),
+    Schema = mongoose.Schema;
+
+var bookModel = new Schema({
+    title: {
+        type: String
+    },
+    author: {type: String},
+    genre: {type: String},
+    read: {type: Boolean, default:false}
+});
+
+module.exports= mongoose.model('Book', bookModel);
+```
+
+```js
+// app.js
+
+// create a reference to mongoose
+var mongoose = require('mongoose');
+
+// open a connection to the database
+var db = mongoose.connect('mongodb://localhost/bookAPI');
+
+// create a reference to bookModel
+var Book = require('./models/bookModel');
+
+bookRouter.route('/Books')
+    .get(function(req, res){
+      Book.find(function(err,books){
+        if(err)
+          res.status(500).send(err);
+        else
+          res.json(books);
+      });
+    });
+
+```
+
 
