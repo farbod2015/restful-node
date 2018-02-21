@@ -1,9 +1,8 @@
-// create a reference to express
-var express = require('express');
-
-// create a reference to mongoose
-var mongoose = require('mongoose');
-
+// create a reference to ...
+var express = require('express'),
+    mongoose = require('mongoose'),
+    bodyParser = require('body-parser');
+    
 // open a connection to the database
 var db = mongoose.connect('mongodb://localhost/bookAPI');
 
@@ -16,26 +15,46 @@ var app = express();
 // set up a port
 var port = process.env.PORT || 3000;
 
+app.use(bodyParser.urlencoded({extended:true}));
+app.use(bodyParser.json());
+
 // create an instance of the Router to define all of our routes
 var bookRouter = express();
 
 bookRouter.route('/Books')
-    .get(function(req, res){
+  .post(function(req, res){
+    var book = new Book(req.body);
 
-      var query = {};
-      
-      if (req.query.genre)
-      {
-        query.genre = req.query.genre;
-      }
+    console.log(book);
+    res.send(book);
 
-      Book.find(query, function(err,books){
-        if(err)
-          res.status(500).send(err);
-        else
-          res.json(books);
-      });
+  })
+  .get(function(req, res){
+
+    var query = {};
+    if (req.query.genre)
+    {
+      query.genre = req.query.genre;
+    }
+
+    Book.find(query, function(err,books){
+      if(err)
+        res.status(500).send(err);
+      else
+        res.json(books);
     });
+  });
+
+bookRouter.route('/Books/:bookId')
+.get(function(req, res){
+
+  Book.findById(req.params.bookId, function(err,book){
+    if(err)
+      res.status(500).send(err);
+    else
+      res.json(book);
+  });
+});
 
 // setup a base for where our API route is going to be. This will be the root of all of our routes
 app.use('/api', bookRouter)
